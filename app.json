@@ -1,0 +1,79 @@
+{
+  "expo": {
+    "name": "سؤال",
+    "slug": "su2al",
+    "scheme": "su2al",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F6F3FF",
+    "ios": {
+      "bundleIdentifier": "com.su2al.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.su2al.app",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#6C3CE9",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Tajawal",
+                "fontDefinitions": [
+                  { "path": "./assets/fonts/Tajawal_400Regular.ttf", "weight": 400 },
+                  { "path": "./assets/fonts/Tajawal_500Medium.ttf", "weight": 500 },
+                  { "path": "./assets/fonts/Tajawal_700Bold.ttf", "weight": 700 },
+                  { "path": "./assets/fonts/Tajawal_800ExtraBold.ttf", "weight": 800 }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/fonts/Tajawal_400Regular.ttf",
+              "./assets/fonts/Tajawal_500Medium.ttf",
+              "./assets/fonts/Tajawal_700Bold.ttf",
+              "./assets/fonts/Tajawal_800ExtraBold.ttf"
+            ]
+          }
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#F6F3FF",
+          "dark": {
+            "image": "./assets/splash-icon.png",
+            "backgroundColor": "#120B24"
+          }
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
