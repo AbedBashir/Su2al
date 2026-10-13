@@ -74,6 +74,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://su2al.abedbashir.com"
     }
   }
 }

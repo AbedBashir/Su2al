@@ -5,6 +5,7 @@ import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { AppButton, AppText, Card, Icon, Screen, type IconName } from '@/components';
 import { lastRound } from '@/game/summary';
+import { usePlayerStore } from '@/stores/playerStore';
 import { getCategory } from '@/lib/categories';
 import { formatNumber, t } from '@/lib/strings';
 import { useTheme } from '@/theme';
@@ -13,6 +14,9 @@ export default function ResultScreen() {
   const { colors } = useTheme();
   // Read once: the summary belongs to the round that just ended.
   const [round] = useState(lastRound);
+  const profile = usePlayerStore((s) => s.profile);
+  // Filled in when the server confirms the daily score.
+  const rank = usePlayerStore((s) => (round?.day && s.lastRank?.day === round.day ? s.lastRank.rank : null));
 
   if (!round) {
     return (
@@ -50,7 +54,18 @@ export default function ResultScreen() {
         <Stat icon="check-circle" color={colors.success} value={`${formatNumber(round.correct)} ${t.game.of} ${formatNumber(round.total)}`} label={t.result.correct} />
         <Stat icon="circle-multiple" color={colors.accent} value={`+${formatNumber(round.coins)}`} label={t.result.coins} />
         {round.streak ? <Stat icon="fire" color={colors.accent} value={formatNumber(round.streak)} label={t.result.streak} /> : null}
+        {rank ? <Stat icon="trophy" color={colors.primary} value={`#${formatNumber(rank)}`} label={t.result.rank} /> : null}
       </Animated.View>
+
+      {round.mode === 'daily' && !profile ? (
+        <Animated.View entering={FadeInDown.delay(250)}>
+          <Card>
+            <AppText variant="heading">{t.leaderboard.joinTitle}</AppText>
+            <AppText color="textMuted">{t.leaderboard.joinBody}</AppText>
+            <AppButton title={t.leaderboard.join} variant="accent" icon="account-plus" onPress={() => router.push('/profile')} />
+          </Card>
+        </Animated.View>
+      ) : null}
 
       <View style={{ gap: 12 }}>
         {round.mode === 'category' ? (

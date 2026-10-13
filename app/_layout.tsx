@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { iconFonts } from '@/components';
 import { ensureRTL } from '@/lib/rtl';
+import { usePlayerStore } from '@/stores/playerStore';
 import { t } from '@/lib/strings';
 import { AppThemeProvider, fontFamily, useTheme } from '@/theme';
 
@@ -21,6 +22,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (fontsLoaded || fontError) SplashScreen.hideAsync();
   }, [fontsLoaded, fontError]);
+
+  // A daily score finished offline goes up as soon as the app opens again.
+  useEffect(() => {
+    void usePlayerStore.getState().flush();
+  }, []);
 
   if (!fontsLoaded && !fontError) return null;
 
@@ -78,6 +84,7 @@ function RootNavigator() {
         <Stack.Screen name="result" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="leaderboard" options={{ title: t.leaderboard.title }} />
         <Stack.Screen name="settings" options={{ title: t.settings.title }} />
+        <Stack.Screen name="profile" options={{ title: t.profile.title, presentation: 'modal' }} />
       </Stack>
     </ThemeProvider>
   );

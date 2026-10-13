@@ -31,7 +31,7 @@ type ProgressState = {
   /** Spends coins if the player has enough. Returns whether it worked. */
   spendCoins: (n: number) => boolean;
   markSeen: (category: CategoryId, ids: string[]) => void;
-  finishDaily: (result: DailyResult) => { streak: number };
+  finishDaily: (result: DailyResult, day?: string) => { streak: number };
   finishCategory: (category: CategoryId, score: number, correct: number) => { best: boolean };
 };
 
@@ -65,8 +65,8 @@ export const useProgressStore = create<ProgressState>()(
           const merged = [...(s.seen[category] ?? []).filter((id) => !ids.includes(id)), ...ids];
           return { seen: { ...s.seen, [category]: merged.slice(-SEEN_LIMIT) } };
         }),
-      finishDaily: (result) => {
-        const today = dayKey();
+      finishDaily: (result, day = dayKey()) => {
+        const today = day;
         const s = get();
         if (s.daily[today]) return { streak: s.streak }; // one attempt per day
         const streak = s.lastDaily === yesterday(today) ? s.streak + 1 : 1;

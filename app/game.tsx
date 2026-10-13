@@ -7,8 +7,9 @@ import { AppText, Card, Icon, PressableScale, Screen, StatChip } from '@/compone
 import { setLastRound, type RoundSummary } from '@/game/summary';
 import { HELPERS, RULES, useGame, type Answer, type Helper, type Mode } from '@/game/useGame';
 import { getCategory, type CategoryId } from '@/lib/categories';
-import { categoryQuestions, dailyQuestions, type Question } from '@/shared/quiz';
+import { categoryQuestions, dailyQuestions, dayKey, type Question } from '@/shared/quiz';
 import { formatNumber, t } from '@/lib/strings';
+import { usePlayerStore } from '@/stores/playerStore';
 import { useProgressStore } from '@/stores/progressStore';
 import { useTheme } from '@/theme';
 
@@ -16,9 +17,11 @@ type Params = { mode?: Mode; category?: CategoryId };
 
 export default function GameScreen() {
   const { mode = 'daily', category = 'general' } = useLocalSearchParams<Params>();
-  // Picked once per mount: a round's questions never change mid-game.
+  // Picked once per mount: a round's questions (and its day) never change mid-game,
+  // even if midnight passes while playing.
+  const [day] = useState(dayKey);
   const [questions] = useState<Question[]>(() =>
-    mode === 'daily' ? dailyQuestions() : categoryQuestions(category, useProgressStore.getState().seen[category] ?? []),
+    mode === 'daily' ? dailyQuestions(day) : categoryQuestions(category, useProgressStore.getState().seen[category] ?? []),
   );
   const game = useGame(mode, questions);
   const { state, question, msLeft } = game;
@@ -34,7 +37,12 @@ export default function GameScreen() {
     const summary: RoundSummary = { mode, score, correct, total, coins: correct * RULES.coinsPerCorrect, outOfLives };
     if (mode === 'daily') {
       summary.coins += 10 + (correct === total ? 10 : 0); // finishing the daily is worth it
-      summary.streak = progress.finishDaily({ score, correct, total }).streak;
+      summary.streak = progress.finishDaily({ score, correct, total }, day).streak;
+      summary.day = day;
+      // The server re-scores the round from these answers; sent now or when back online.
+      const player = usePlayerStore.getState();
+      player.queueDaily({ day, answers: answers.map(({ id, choice, ms }) => ({ id, choice, ms })) });
+      void player.flush();
     } else {
       summary.category = category;
       progress.markSeen(category, answers.map((a) => a.id));

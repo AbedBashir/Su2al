@@ -21,7 +21,8 @@ export const HELPERS = {
 } as const;
 export type Helper = keyof typeof HELPERS;
 
-export type Answer = { id: string; correct: boolean; points: number; ms: number; skipped?: boolean };
+/** `choice` is the picked option's text (null on timeout or skip): the leaderboard server re-checks it. */
+export type Answer = { id: string; choice: string | null; correct: boolean; points: number; ms: number; skipped?: boolean };
 
 type State = {
   index: number;
@@ -73,7 +74,10 @@ function reducer(mode: Mode) {
           picked: a.option,
           score: s.score + points,
           lives: mode === 'category' && !correct ? s.lives - 1 : s.lives,
-          answers: [...s.answers, { id: a.question.id, correct, points, ms: a.now - s.startedAt }],
+          answers: [
+            ...s.answers,
+            { id: a.question.id, choice: a.option === null ? null : (a.question.options[a.option] ?? null), correct, points, ms: a.now - s.startedAt },
+          ],
         };
       }
       case 'skip':
@@ -83,7 +87,7 @@ function reducer(mode: Mode) {
           phase: 'reveal',
           picked: null,
           usedHelpers: [...s.usedHelpers, 'skip'],
-          answers: [...s.answers, { id: a.question.id, correct: false, points: 0, ms: a.now - s.startedAt, skipped: true }],
+          answers: [...s.answers, { id: a.question.id, choice: null, correct: false, points: 0, ms: a.now - s.startedAt, skipped: true }],
         };
       case 'next': {
         if (s.phase !== 'reveal') return s;

@@ -4,6 +4,8 @@ import type { Mode } from './useGame';
 /** What the result screen shows about the round that just ended. */
 export type RoundSummary = {
   mode: Mode;
+  /** dayKey of a daily round. */
+  day?: string;
   category?: CategoryId;
   score: number;
   correct: number;

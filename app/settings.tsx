@@ -1,8 +1,11 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { StyleSheet, Switch, View } from 'react-native';
 
 import { AppText, Card, Icon, PressableScale, Screen, type IconName } from '@/components';
 import { t } from '@/lib/strings';
+import { flag } from '@/lib/countries';
+import { usePlayerStore } from '@/stores/playerStore';
 import { useSettingsStore, type ThemeMode } from '@/stores/settingsStore';
 import { minTapTarget, useTheme } from '@/theme';
 
@@ -16,9 +19,23 @@ export default function SettingsScreen() {
   const { colors, radius, spacing } = useTheme();
   const { themeMode, setThemeMode, soundEnabled, setSoundEnabled, hapticsEnabled, setHapticsEnabled } =
     useSettingsStore();
+  const profile = usePlayerStore((s) => s.profile);
 
   return (
     <Screen scroll>
+      <PressableScale onPress={() => router.push('/profile')} accessibilityRole="button" accessibilityLabel={t.settings.profile}>
+        <Card style={{ ...styles.row, gap: spacing.sm }}>
+          <Icon name="account-circle" size={26} color={colors.primary} />
+          <View style={styles.flex}>
+            <AppText variant="heading">{t.settings.profile}</AppText>
+            <AppText variant="caption" color="textMuted">
+              {profile ? `${flag(profile.country)} ${profile.name}` : t.leaderboard.joinBody}
+            </AppText>
+          </View>
+          <Icon name="chevron-left" size={26} color={colors.textMuted} />
+        </Card>
+      </PressableScale>
+
       <Card>
         <SectionTitle icon="theme-light-dark" title={t.settings.appearance} />
         <View style={[styles.segmented, { backgroundColor: colors.surfaceAlt, borderRadius: radius.md, gap: spacing.xxs }]}>
