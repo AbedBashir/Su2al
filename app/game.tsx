@@ -61,6 +61,13 @@ export default function GameScreen() {
     if (state.phase === 'done') finish(state.answers, state.score, mode === 'category' && state.lives <= 0);
   });
 
+  // No rewarded ads in this build (or none configured): there's nothing to offer.
+  const canRevive = rewardedAvailable();
+  const { decline } = game;
+  useEffect(() => {
+    if (state.phase === 'offer' && !canRevive) decline();
+  }, [state.phase, canRevive, decline]);
+
   // Leaving mid-round must be deliberate. In the daily challenge it ends today's attempt,
   // so the questions can't be looked at and replayed later.
   const confirmQuit = () => {
@@ -122,7 +129,7 @@ export default function GameScreen() {
         />
       ) : null}
 
-      {state.phase === 'offer' ? (
+      {state.phase === 'offer' && canRevive ? (
         <SecondChance
           onWatch={async () => {
             const result = await showRewardedAd();

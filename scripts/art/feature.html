@@ -1,0 +1,19 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><script src="mark.js"></script>
+<style>
+@font-face{font-family:T;src:url('../../assets/fonts/Tajawal_800ExtraBold.ttf');font-weight:800}
+@font-face{font-family:T;src:url('../../assets/fonts/Tajawal_500Medium.ttf');font-weight:500}
+html,body{margin:0;width:1024px;height:500px;overflow:hidden}
+.wrap{position:relative;width:1024px;height:500px;background:radial-gradient(circle at 85% 10%,#9b7bff 0,#6c3ce9 45%,#4a1fb8 100%);display:flex;align-items:center;justify-content:space-between;padding:0 80px;box-sizing:border-box;font-family:T;color:#fff}
+.t h1{font-size:150px;line-height:1.05;margin:0;font-weight:800}
+.t p{font-size:40px;margin:6px 0 26px;font-weight:500;color:#ede6ff}
+.chips{display:flex;gap:12px}
+.chip{background:rgba(255,255,255,.16);border-radius:999px;padding:8px 18px;font-size:22px;font-weight:500;white-space:nowrap}
+.icon{width:290px;height:290px;border-radius:64px;overflow:hidden;box-shadow:0 30px 60px rgba(30,8,90,.45);flex:none}
+.icon svg{width:290px;height:290px}
+.dots span{position:absolute;border-radius:50%;background:#ffc53d}
+</style></head><body><div class="wrap">
+<div class="t"><h1>سؤال</h1><p>تحدَّ معلوماتك كل يوم</p>
+<div class="chips"><span class="chip">📅 تحدٍّ يومي</span><span class="chip">🏆 متصدرون عرب</span><span class="chip">📚 ألف سؤال وأكثر</span></div></div>
+<div class="icon" id="i"></div>
+<div class="dots"><span style="width:14px;height:14px;left:60px;top:70px"></span><span style="width:10px;height:10px;left:420px;top:440px;opacity:.7"></span></div>
+</div><script>document.getElementById('i').innerHTML=iconSvg('full',290)</script></body></html>

@@ -1,0 +1,14 @@
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:T;src:url('../../assets/fonts/Tajawal_800ExtraBold.ttf');font-weight:800}
+@font-face{font-family:T;src:url('../../assets/fonts/Tajawal_500Medium.ttf');font-weight:500}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden}
+.w{width:1080px;height:1920px;background:radial-gradient(circle at 85% 5%,#9b7bff 0,#6c3ce9 40%,#4a1fb8 100%);font-family:T;color:#fff;display:flex;flex-direction:column;align-items:center;box-sizing:border-box;padding-top:90px}
+h1{font-size:84px;line-height:1.25;margin:0 60px;text-align:center;font-weight:800}
+p{font-size:42px;margin:14px 60px 0;color:#ede6ff;font-weight:500;text-align:center}
+.phone{margin-top:70px;width:760px;border-radius:64px;padding:18px;background:#120b24;box-shadow:0 40px 90px rgba(20,5,70,.5)}
+.phone img{display:block;width:100%;border-radius:48px}
+</style></head><body><div class="w">
+<h1 id="h"></h1><p id="p"></p><div class="phone"><img id="i"></div></div>
+<script>const q=new URLSearchParams(location.search);h.textContent=q.get('h');p.textContent=q.get('p')||'';i.src=q.get('img');</script>
+</body></html>

@@ -10,8 +10,10 @@ import { useShopStore } from '@/stores/shopStore';
 type AdsModule = typeof import('react-native-google-mobile-ads');
 
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+// Builds made for store screenshots leave ads out entirely.
+const adsOff = process.env.EXPO_PUBLIC_NO_ADS === '1';
 let mod: AdsModule | null = null;
-if (!isExpoGo) {
+if (!isExpoGo && !adsOff) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- lazy: absent in Expo Go
     mod = require('react-native-google-mobile-ads') as AdsModule;
