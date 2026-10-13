@@ -1,9 +1,14 @@
 import mysql from 'mysql2/promise';
 
-const url = process.env.DATABASE_URL;
-if (!url) throw new Error('DATABASE_URL is not set');
+const raw = process.env.DATABASE_URL;
+if (!raw) throw new Error('DATABASE_URL is not set');
 
-export const db = mysql.createPool({ uri: url, connectionLimit: 5, timezone: 'Z' });
+// Hostinger writes host "localhost", which Node may resolve to IPv6 (::1) where the
+// database user has no grant; 127.0.0.1 always works on the same server.
+const url = new URL(raw);
+if (url.hostname === 'localhost') url.hostname = '127.0.0.1';
+
+export const db = mysql.createPool({ uri: url.toString(), connectionLimit: 5, timezone: 'Z' });
 
 /**
  * Creates the two tables if they don't exist, so a fresh database needs no setup.
