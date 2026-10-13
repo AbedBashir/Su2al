@@ -6,7 +6,7 @@ import { dayKey } from '../../src/shared/quiz';
 import { ensureSchema } from './db';
 import { homeHtml } from './home';
 import { privacyHtml } from './privacy';
-import { countrySchema, createPlayer, nameSchema, optionalPlayer, requirePlayer, updatePlayer } from './players';
+import { countrySchema, createPlayer, deletePlayer, nameSchema, optionalPlayer, requirePlayer, updatePlayer } from './players';
 import { acceptableDay, allTimeRank, allTimeTop, dailyRank, dailyTop, saveDaily, scoreSubmission, submitSchema } from './scores';
 
 const app = express();
@@ -44,6 +44,16 @@ app.patch(
     const body = z.object({ name: nameSchema.optional(), country: countrySchema.optional() }).safeParse(req.body);
     if (!body.success) return res.status(400).json({ message: zodMessage(body.error) });
     res.json(await updatePlayer(req.player!.id, body.data));
+  }),
+);
+
+app.delete(
+  '/api/players/me',
+  limit(10, 60),
+  requirePlayer,
+  asyncRoute(async (req, res) => {
+    await deletePlayer(req.player!.id);
+    res.json({ deleted: true });
   }),
 );
 

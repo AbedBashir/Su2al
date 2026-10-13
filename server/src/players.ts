@@ -45,6 +45,11 @@ export async function updatePlayer(id: string, changes: { name?: string; country
   return rows[0] as Player;
 }
 
+/** Removes the player and, through the foreign key, every score they posted. */
+export async function deletePlayer(id: string) {
+  await db.query('DELETE FROM players WHERE id = ?', [id]);
+}
+
 async function playerFromHeader(req: Request): Promise<Player | null> {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return null;

@@ -36,7 +36,7 @@ export const privacyHtml = `<!doctype html>
     <li><b>المشتريات:</b> شراء «إزالة الإعلانات» يتم عبر Google Play أو App Store، ونستخدم RevenueCat للتحقق منه بمعرّف مجهول. لا نرى بيانات الدفع.</li>
   </ul>
   <h2>الحذف</h2>
-  <p>حذف التطبيق يمسح كل ما على جهازك. لحذف اسمك ونتائجك من لوحة المتصدرين، راسلنا على <a href="mailto:${CONTACT}">${CONTACT}</a> مع اسمك المستعار ودولتك، ونحذفها خلال ٣٠ يومًا.</p>
+  <p id="delete">حذف التطبيق يمسح كل ما على جهازك. لحذف اسمك ونتائجك من لوحة المتصدرين فورًا: الإعدادات ← ملفّك في لوحة المتصدرين ← «حذف ملفّي ونتائجي». أو راسلنا على <a href="mailto:${CONTACT}">${CONTACT}</a> مع اسمك المستعار ودولتك، ونحذفها خلال ٣٠ يومًا.</p>
   <h2>الأطفال</h2>
   <p>اللعبة غير موجهة للأطفال دون ١٣ عامًا، ولا نجمع عن قصد بيانات منهم.</p>
   <h2>الأمان والتغييرات</h2>
@@ -55,7 +55,7 @@ export const privacyHtml = `<!doctype html>
     <li><b>Purchases:</b> "Remove ads" is bought through Google Play or the App Store; we use RevenueCat to verify it with an anonymous ID. We never see your payment details.</li>
   </ul>
   <h2>Deletion</h2>
-  <p>Uninstalling the app erases everything on your device. To remove your nickname and scores from the leaderboard, email <a href="mailto:${CONTACT}">${CONTACT}</a> with your nickname and country, and we delete them within 30 days.</p>
+  <p id="delete-en">Uninstalling the app erases everything on your device. To remove your nickname and scores from the leaderboard right away: Settings → Your leaderboard profile → "Delete my profile and scores". Or email <a href="mailto:${CONTACT}">${CONTACT}</a> with your nickname and country, and we delete them within 30 days.</p>
   <h2>Children</h2>
   <p>The game is not directed at children under 13, and we do not knowingly collect their data.</p>
   <h2>Security and changes</h2>

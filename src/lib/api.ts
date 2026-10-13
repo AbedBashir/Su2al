@@ -37,6 +37,7 @@ export const api = {
     call<PlayerProfile & { token: string }>('/api/players', { method: 'POST', body: JSON.stringify({ name, country }) }),
   updatePlayer: (token: string, changes: { name?: string; country?: string }) =>
     call<PlayerProfile>('/api/players/me', { method: 'PATCH', token, body: JSON.stringify(changes) }),
+  deletePlayer: (token: string) => call<{ deleted: boolean }>('/api/players/me', { method: 'DELETE', token }),
   submitDaily: (token: string, day: string, answers: DailyAnswer[]) =>
     call<{ rank: number; score: number; correct: number; alreadySubmitted: boolean }>('/api/daily/submit', {
       method: 'POST',

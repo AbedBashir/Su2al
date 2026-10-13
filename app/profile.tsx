@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppButton, AppText, Card, PressableScale, Screen } from '@/components';
 import { ApiError } from '@/lib/api';
@@ -15,6 +15,7 @@ export default function ProfileScreen() {
   const profile = usePlayerStore((s) => s.profile);
   const join = usePlayerStore((s) => s.join);
   const update = usePlayerStore((s) => s.update);
+  const leave = usePlayerStore((s) => s.leave);
   const [name, setName] = useState(profile?.name ?? '');
   const [country, setCountry] = useState<string | null>(profile?.country ?? null);
   const [busy, setBusy] = useState(false);
@@ -36,6 +37,27 @@ export default function ProfileScreen() {
       setBusy(false);
     }
   };
+
+  const confirmDelete = () =>
+    Alert.alert(t.profile.deleteTitle, t.profile.deleteBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      {
+        text: t.profile.deleteConfirm,
+        style: 'destructive',
+        onPress: async () => {
+          setBusy(true);
+          try {
+            await leave();
+            Alert.alert(t.profile.deleted);
+            router.back();
+          } catch {
+            setError(t.leaderboard.offline);
+          } finally {
+            setBusy(false);
+          }
+        },
+      },
+    ]);
 
   return (
     <Screen edges={['bottom']}>
@@ -104,6 +126,7 @@ export default function ProfileScreen() {
           </AppText>
         ) : null}
         <AppButton title={profile ? t.profile.save : t.leaderboard.join} icon="check" loading={busy} onPress={save} />
+        {profile ? <AppButton title={t.profile.delete} variant="ghost" icon="delete-outline" disabled={busy} onPress={confirmDelete} /> : null}
       </View>
     </Screen>
   );

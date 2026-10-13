@@ -15,6 +15,8 @@ type PlayerState = {
 
   join: (name: string, country: string) => Promise<void>;
   update: (changes: { name?: string; country?: string }) => Promise<void>;
+  /** Deletes the player and their scores from the server, then forgets them here. */
+  leave: () => Promise<void>;
   queueDaily: (pending: Pending) => void;
   /** Sends the pending round if there is one. Safe to call anytime. */
   flush: () => Promise<number | null>;
@@ -37,6 +39,17 @@ export const usePlayerStore = create<PlayerState>()(
         if (!profile) return;
         const updated = await api.updatePlayer(profile.token, changes);
         set({ profile: { ...profile, ...updated } });
+      },
+      leave: async () => {
+        const { profile } = get();
+        if (!profile) return;
+        try {
+          await api.deletePlayer(profile.token);
+        } catch (e) {
+          // Already gone on the server: still forget it here.
+          if (!(e instanceof ApiError && e.status === 401)) throw e;
+        }
+        set({ profile: null, pending: null, lastRank: null });
       },
       queueDaily: (pending) => set({ pending }),
       flush: async () => {

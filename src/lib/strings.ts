@@ -107,6 +107,11 @@ export const t = {
     save: 'حفظ',
     saved: 'تم الحفظ ✅',
     pickCountry: 'اختر بلدك',
+    delete: 'حذف ملفّي ونتائجي',
+    deleteTitle: 'حذف ملفّك؟',
+    deleteBody: 'سيُحذف اسمك وكل نتائجك من لوحة المتصدرين نهائيًا. تقدّمك وعملاتك على هذا الجهاز تبقى كما هي.',
+    deleteConfirm: 'حذف',
+    deleted: 'تم حذف ملفّك',
   },
   settings: {
     title: 'الإعدادات',
