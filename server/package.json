@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.28.2",
     "express": "^4.21.0",
     "express-rate-limit": "^7.4.0",
     "mysql2": "^3.11.0",
