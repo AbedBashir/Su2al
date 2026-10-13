@@ -7,7 +7,7 @@ import { AppText, Card, Icon, PressableScale, Screen, StatChip } from '@/compone
 import { setLastRound, type RoundSummary } from '@/game/summary';
 import { HELPERS, RULES, useGame, type Answer, type Helper, type Mode } from '@/game/useGame';
 import { getCategory, type CategoryId } from '@/lib/categories';
-import { categoryQuestions, dailyQuestions, type Question } from '@/lib/questions';
+import { categoryQuestions, dailyQuestions, type Question } from '@/shared/quiz';
 import { formatNumber, t } from '@/lib/strings';
 import { useProgressStore } from '@/stores/progressStore';
 import { useTheme } from '@/theme';

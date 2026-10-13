@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { CategoryId } from '@/lib/categories';
-import { dayKey } from '@/lib/questions';
+import { dayKey } from '@/shared/quiz';
 import { zustandStorage } from '@/lib/storage';
 
 /** Coins a new player starts with, enough to try every helper once or twice. */

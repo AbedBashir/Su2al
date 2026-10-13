@@ -1,16 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
-import type { Question } from '@/lib/questions';
+import { RULES as QUIZ, pointsFor, type Question } from '@/shared/quiz';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 export type Mode = 'daily' | 'category';
 
 export const RULES = {
-  secondsPerQuestion: 15,
-  pointsPerCorrect: 100,
-  /** Extra points for answering fast, scaled by the time left. */
-  maxSpeedBonus: 50,
+  secondsPerQuestion: QUIZ.secondsPerQuestion,
   lives: 3,
   revealMs: 1300,
   coinsPerCorrect: 2,
@@ -61,8 +58,6 @@ const initial = (now: number): State => ({
   usedHelpers: [],
 });
 
-const pointsFor = (msLeft: number) =>
-  RULES.pointsPerCorrect + Math.round((RULES.maxSpeedBonus * Math.max(0, msLeft)) / (RULES.secondsPerQuestion * 1000));
 
 function reducer(mode: Mode) {
   return (s: State, a: Action): State => {
@@ -70,7 +65,8 @@ function reducer(mode: Mode) {
       case 'pick': {
         if (s.phase !== 'question') return s;
         const correct = a.option === a.question.answer;
-        const points = correct ? pointsFor(s.deadline - a.now) : 0;
+        // Same formula the leaderboard server uses to re-check daily scores.
+        const points = pointsFor(correct, a.now - s.startedAt);
         return {
           ...s,
           phase: 'reveal',

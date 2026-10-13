@@ -43,3 +43,8 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Leaderboard server
+server/node_modules/
+server/dist/
+server/.env

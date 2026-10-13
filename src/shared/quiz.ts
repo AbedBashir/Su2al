@@ -1,16 +1,49 @@
-import type { CategoryId } from './categories';
-import { CATEGORIES } from './categories';
+/**
+ * Quiz rules shared by the app and the leaderboard server (server/ bundles this file),
+ * so both pick the same daily questions and score answers the same way.
+ * Keep it free of React Native imports and path aliases.
+ */
+import arts from '../data/questions/arts.json';
+import general from '../data/questions/general.json';
+import geography from '../data/questions/geography.json';
+import history from '../data/questions/history.json';
+import language from '../data/questions/language.json';
+import nature from '../data/questions/nature.json';
+import religion from '../data/questions/religion.json';
+import science from '../data/questions/science.json';
+import sports from '../data/questions/sports.json';
+import technology from '../data/questions/technology.json';
 
-import arts from '@/data/questions/arts.json';
-import general from '@/data/questions/general.json';
-import geography from '@/data/questions/geography.json';
-import history from '@/data/questions/history.json';
-import language from '@/data/questions/language.json';
-import nature from '@/data/questions/nature.json';
-import religion from '@/data/questions/religion.json';
-import science from '@/data/questions/science.json';
-import sports from '@/data/questions/sports.json';
-import technology from '@/data/questions/technology.json';
+/** Order matters: it feeds the daily shuffle, so changing it changes every future daily set. */
+export const CATEGORY_IDS = [
+  'history',
+  'geography',
+  'science',
+  'sports',
+  'language',
+  'religion',
+  'arts',
+  'technology',
+  'nature',
+  'general',
+] as const;
+export type CategoryId = (typeof CATEGORY_IDS)[number];
+
+export const RULES = {
+  questionsPerRound: 10,
+  secondsPerQuestion: 15,
+  pointsPerCorrect: 100,
+  /** Extra points for answering fast, scaled by the time left. */
+  maxSpeedBonus: 50,
+} as const;
+
+/** Points for an answer given `msTaken` after the question appeared (0 if wrong). */
+export function pointsFor(correct: boolean, msTaken: number) {
+  if (!correct) return 0;
+  const total = RULES.secondsPerQuestion * 1000;
+  const left = Math.min(total, Math.max(0, total - msTaken));
+  return RULES.pointsPerCorrect + Math.round((RULES.maxSpeedBonus * left) / total);
+}
 
 /** 1 easy · 2 medium · 3 hard. */
 export type Difficulty = 1 | 2 | 3;
@@ -28,7 +61,7 @@ export type Question = {
   difficulty: Difficulty;
 };
 
-const BANK: Record<CategoryId, RawQuestion[]> = {
+const BANK = {
   history,
   geography,
   science,
@@ -42,9 +75,9 @@ const BANK: Record<CategoryId, RawQuestion[]> = {
 } as Record<CategoryId, RawQuestion[]>;
 
 export const questionCount = (category?: CategoryId) =>
-  category ? BANK[category].length : CATEGORIES.reduce((n, c) => n + BANK[c.id].length, 0);
+  category ? BANK[category].length : CATEGORY_IDS.reduce((n, c) => n + BANK[c].length, 0);
 
-/** Small, fast, seedable PRNG so the daily set is identical on every phone. */
+/** Small, fast, seedable PRNG so the daily set is identical on every phone and on the server. */
 function mulberry32(seed: number) {
   return () => {
     seed |= 0;
@@ -90,11 +123,11 @@ export function dayKey(date = new Date()): string {
   return new Date(date.getTime() + 3 * 3_600_000).toISOString().slice(0, 10);
 }
 
-/** Same 10 questions, same option order, on every phone: 4 easy, 4 medium, 2 hard, one per category where possible. */
+/** Same 10 questions, same option order, everywhere: 4 easy, 4 medium, 2 hard, one per category. */
 export function dailyQuestions(key = dayKey()): Question[] {
   const random = mulberry32(hashString(`su2al:${key}`));
   const plan: Difficulty[] = [1, 1, 1, 1, 2, 2, 2, 2, 3, 3];
-  const categories = shuffle(CATEGORIES.map((c) => c.id), random);
+  const categories = shuffle(CATEGORY_IDS, random);
   const picked: Question[] = [];
   const used = new Set<string>();
   plan.forEach((difficulty, i) => {
@@ -114,7 +147,7 @@ export function dailyQuestions(key = dayKey()): Question[] {
  * A category round: unseen questions first (so players rarely see repeats), easy
  * to hard, freshly shuffled each time.
  */
-export function categoryQuestions(category: CategoryId, seen: readonly string[], count = 10): Question[] {
+export function categoryQuestions(category: CategoryId, seen: readonly string[], count: number = RULES.questionsPerRound): Question[] {
   const random = Math.random;
   const seenSet = new Set(seen);
   const all = BANK[category];

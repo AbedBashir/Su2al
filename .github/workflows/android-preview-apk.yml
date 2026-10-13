@@ -7,7 +7,7 @@ name: Android preview APK
 
 on:
   push:
-    branches: [claude/stoic-ritchie-icnouv]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

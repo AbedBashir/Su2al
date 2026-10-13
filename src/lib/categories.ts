@@ -1,19 +1,11 @@
 import type { ComponentProps } from 'react';
 import type { MaterialCommunityIcons } from '@expo/vector-icons';
 
-export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+import type { CategoryId } from '@/shared/quiz';
 
-export type CategoryId =
-  | 'history'
-  | 'geography'
-  | 'science'
-  | 'sports'
-  | 'language'
-  | 'religion'
-  | 'arts'
-  | 'technology'
-  | 'nature'
-  | 'general';
+export type { CategoryId };
+
+export type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 export type Category = {
   id: CategoryId;

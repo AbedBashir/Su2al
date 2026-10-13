@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { View } from 'react-native';
 
 import { AppButton, AppText, Card, Icon, Screen } from '@/components';
-import { dayKey } from '@/lib/questions';
+import { dayKey } from '@/shared/quiz';
 import { formatNumber, t } from '@/lib/strings';
 import { useProgressStore } from '@/stores/progressStore';
 import { useTheme } from '@/theme';

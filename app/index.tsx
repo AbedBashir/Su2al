@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AppButton, AppText, Icon, PressableScale, Screen, StatChip } from '@/components';
-import { dayKey } from '@/lib/questions';
+import { dayKey } from '@/shared/quiz';
 import { t } from '@/lib/strings';
 import { liveStreak, useProgressStore } from '@/stores/progressStore';
 import { useTheme } from '@/theme';
