@@ -25,6 +25,8 @@
     },
     "plugins": [
       "expo-router",
+      ["expo-audio", { "microphonePermission": false, "recordAudioAndroid": false }],
+      "expo-sharing",
       [
         "expo-font",
         {

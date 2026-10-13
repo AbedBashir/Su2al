@@ -73,6 +73,13 @@ export const t = {
     rank: 'ترتيبك اليوم',
     share: 'شارك نتيجتك',
   },
+  share: {
+    daily: 'تحدي اليوم',
+    correct: 'صحيحة',
+    challenge: 'هل تقدر تتفوّق عليّ؟ 🤔',
+    failed: 'تعذّرت المشاركة، حاول مرة أخرى.',
+    text: (score: string, squares: string) => `حصلت على ${score} نقطة في سؤال ${squares}\nهل تقدر تتفوّق عليّ؟`,
+  },
   leaderboard: {
     title: 'المتصدرون',
     today: 'اليوم',

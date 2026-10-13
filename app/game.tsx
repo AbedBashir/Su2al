@@ -9,6 +9,7 @@ import { setLastRound, type RoundSummary } from '@/game/summary';
 import { HELPERS, RULES, useGame, wrongLeft, type Answer, type Helper, type Mode } from '@/game/useGame';
 import { rewardedAvailable, showRewardedAd } from '@/lib/ads';
 import { getCategory, type CategoryId } from '@/lib/categories';
+import { play } from '@/lib/sounds';
 import { categoryQuestions, dailyQuestions, dayKey, type Question } from '@/shared/quiz';
 import { formatNumber, t } from '@/lib/strings';
 import { usePlayerStore } from '@/stores/playerStore';
@@ -36,7 +37,8 @@ export default function GameScreen() {
     const progress = useProgressStore.getState();
     const correct = answers.filter((a) => a.correct).length;
     const total = questions.length;
-    const summary: RoundSummary = { mode, score, correct, total, coins: correct * RULES.coinsPerCorrect, outOfLives };
+    const results = answers.map((a): 'correct' | 'wrong' | 'skipped' => (a.correct ? 'correct' : a.skipped ? 'skipped' : 'wrong'));
+    const summary: RoundSummary = { mode, score, correct, total, coins: correct * RULES.coinsPerCorrect, outOfLives, results };
     if (mode === 'daily') {
       summary.coins += 10 + (correct === total ? 10 : 0); // finishing the daily is worth it
       summary.streak = progress.finishDaily({ score, correct, total }, day).streak;
@@ -124,7 +126,10 @@ export default function GameScreen() {
         <SecondChance
           onWatch={async () => {
             const result = await showRewardedAd();
-            if (result === 'earned') return game.revive();
+            if (result === 'earned') {
+              play('revive');
+              return game.revive();
+            }
             if (result === 'unavailable') Alert.alert(t.game.adUnavailable);
             game.decline();
           }}

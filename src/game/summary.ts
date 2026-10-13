@@ -14,6 +14,8 @@ export type RoundSummary = {
   streak?: number;
   best?: boolean;
   outOfLives?: boolean;
+  /** One entry per answered question, for the shared result grid. */
+  results?: ('correct' | 'wrong' | 'skipped')[];
 };
 
 // Handed from the game screen to the result screen in memory, which keeps the

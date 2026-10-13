@@ -1,13 +1,16 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import * as Sharing from 'expo-sharing';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Share, StyleSheet, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
-import { AppButton, AppText, Card, Icon, Screen, type IconName } from '@/components';
+import { AppButton, AppText, Card, Icon, resultSquares, Screen, ShareCard, type IconName } from '@/components';
 import { lastRound } from '@/game/summary';
 import { AdBanner, maybeShowInterstitial } from '@/lib/ads';
 import { usePlayerStore } from '@/stores/playerStore';
 import { getCategory } from '@/lib/categories';
+import { play } from '@/lib/sounds';
 import { formatNumber, t } from '@/lib/strings';
 import { useTheme } from '@/theme';
 
@@ -21,6 +24,28 @@ export default function ResultScreen() {
     const id = setTimeout(() => void maybeShowInterstitial(), 1500);
     return () => clearTimeout(id);
   }, []);
+  useEffect(() => {
+    if (round) play(round.outOfLives ? 'lose' : 'win');
+  }, [round]);
+
+  const cardRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
+  const share = async () => {
+    if (!round) return;
+    setSharing(true);
+    try {
+      if (await Sharing.isAvailableAsync()) {
+        const uri = await captureRef(cardRef, { format: 'png', quality: 1, width: 1080, height: 1080 });
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t.result.share, UTI: 'public.png' });
+      } else {
+        await Share.share({ message: t.share.text(formatNumber(round.score), resultSquares(round.results)) });
+      }
+    } catch {
+      Alert.alert(t.share.failed);
+    } finally {
+      setSharing(false);
+    }
+  };
   // Filled in when the server confirms the daily score.
   const rank = usePlayerStore((s) => (round?.day && s.lastRank?.day === round.day ? s.lastRank.rank : null));
 
@@ -83,9 +108,14 @@ export default function ResultScreen() {
         ) : (
           <AppButton title={t.result.leaderboard} icon="trophy" onPress={() => router.replace('/leaderboard')} />
         )}
+        <AppButton title={t.result.share} variant="accent" icon="share-variant" loading={sharing} onPress={share} />
         <AppButton title={t.result.home} variant="secondary" icon="home" onPress={() => router.dismissAll()} />
       </View>
       <AdBanner />
+      {/* Drawn off-screen at full size, only to be captured as the shared image. */}
+      <View style={styles.offscreen} pointerEvents="none">
+        <ShareCard ref={cardRef} round={round} />
+      </View>
     </Screen>
   );
 }
@@ -105,4 +135,5 @@ function Stat({ icon, color, value, label }: { icon: IconName; color: string; va
 const styles = StyleSheet.create({
   stats: { flexDirection: 'row', gap: 10 },
   stat: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 14 },
+  offscreen: { position: 'absolute', left: -10000, top: 0 },
 });

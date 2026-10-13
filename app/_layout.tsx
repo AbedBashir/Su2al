@@ -9,6 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { iconFonts } from '@/components';
 import { ensureRTL } from '@/lib/rtl';
 import { prepareAds } from '@/lib/ads';
+import { preloadSounds } from '@/lib/sounds';
 import { usePlayerStore } from '@/stores/playerStore';
 import { useShopStore } from '@/stores/shopStore';
 import { t } from '@/lib/strings';
@@ -30,6 +31,7 @@ export default function RootLayout() {
     void usePlayerStore.getState().flush();
     // Purchases first, so someone who removed ads never gets a consent prompt or an ad.
     void useShopStore.getState().init().then(prepareAds);
+    preloadSounds();
   }, []);
 
   if (!fontsLoaded && !fontError) return null;

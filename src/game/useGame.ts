@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useReducer, useState } from 'react';
 
+import { play } from '@/lib/sounds';
 import { RULES as QUIZ, pointsFor, type Question } from '@/shared/quiz';
 import { useSettingsStore } from '@/stores/settingsStore';
 
@@ -184,11 +185,12 @@ export function useGame(mode: Mode, questions: Question[]) {
     return () => clearTimeout(id);
   }, [state.phase, questions.length]);
 
-  // Feel the result.
+  // Feel and hear the result.
   const lastAnswer = state.answers[state.answers.length - 1];
   useEffect(() => {
-    if (!haptics || state.phase !== 'reveal' || !lastAnswer || lastAnswer.skipped) return;
-    Haptics.notificationAsync(lastAnswer.correct ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
+    if (state.phase !== 'reveal' || !lastAnswer || lastAnswer.skipped) return;
+    play(lastAnswer.correct ? 'correct' : 'wrong');
+    if (haptics) Haptics.notificationAsync(lastAnswer.correct ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Error);
   }, [haptics, state.phase, lastAnswer]);
 
   const pick = useCallback(
@@ -238,5 +240,11 @@ export function useGame(mode: Mode, questions: Question[]) {
   const decline = useCallback(() => dispatch({ type: 'decline' }), []);
 
   const msLeft = state.phase !== 'question' ? 0 : Math.max(0, state.deadline - (state.pausedAt ?? now));
+
+  // A tick each second for the last 5 seconds.
+  const secondsLeft = Math.ceil(msLeft / 1000);
+  useEffect(() => {
+    if (state.phase === 'question' && state.pausedAt === null && secondsLeft > 0 && secondsLeft <= 5) play('tick');
+  }, [secondsLeft, state.phase, state.pausedAt]);
   return { state, question, msLeft, pick, applyHelper, withAdPause, hint, revive, decline };
 }

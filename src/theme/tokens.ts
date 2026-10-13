@@ -4,7 +4,8 @@
  * (via `useTheme()`), never hardcode them.
  */
 
-const palette = {
+/** Raw colours. Screens use theme tokens; only fixed-brand art (the share image) reads these. */
+export const palette = {
   violet50: '#F6F3FF',
   violet100: '#EDE6FF',
   violet200: '#D9CCFF',

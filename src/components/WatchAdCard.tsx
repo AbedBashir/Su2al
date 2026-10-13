@@ -3,6 +3,7 @@ import { Alert, StyleSheet, View } from 'react-native';
 
 import { watchAdForCoins } from '@/game/rewards';
 import { AD_REWARD, rewardedAvailable } from '@/lib/ads';
+import { play } from '@/lib/sounds';
 import { formatNumber, t } from '@/lib/strings';
 import { useShopStore } from '@/stores/shopStore';
 import { useTheme } from '@/theme';
@@ -21,6 +22,7 @@ export function WatchAdCard() {
     setBusy(true);
     const result = await watchAdForCoins();
     setBusy(false);
+    if (result === 'earned') play('coin');
     // Closing the ad early just gives nothing; no message needed.
     if (result !== 'skipped') Alert.alert(result === 'earned' ? t.coins.earned : result === 'limit' ? t.coins.limit : t.coins.unavailable);
   };
