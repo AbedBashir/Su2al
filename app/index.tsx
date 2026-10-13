@@ -3,20 +3,24 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { AppButton, AppText, Icon, PressableScale, Screen, StatChip } from '@/components';
+import { dayKey } from '@/lib/questions';
 import { t } from '@/lib/strings';
+import { liveStreak, useProgressStore } from '@/stores/progressStore';
 import { useTheme } from '@/theme';
 
 export default function HomeScreen() {
   const { colors, radius, spacing } = useTheme();
+  const coins = useProgressStore((s) => s.coins);
+  const streak = useProgressStore((s) => liveStreak(s));
+  const playedToday = useProgressStore((s) => !!s.daily[dayKey()]);
 
   return (
     <Screen scroll edges={['top', 'bottom']}>
       {/* Top bar: stats on the start (right) side, settings on the end side. */}
       <View style={styles.row}>
         <View style={[styles.row, { gap: spacing.xs }]}>
-          {/* Placeholder values; real streak/coins arrive in phases 3–4. */}
-          <StatChip icon="fire" iconColor={colors.accent} value={0} label={t.home.streak} />
-          <StatChip icon="circle-multiple" iconColor={colors.accent} value={0} label={t.home.coins} />
+          <StatChip icon="fire" iconColor={colors.accent} value={streak} label={t.home.streak} />
+          <StatChip icon="circle-multiple" iconColor={colors.accent} value={coins} label={t.home.coins} />
         </View>
         <PressableScale
           onPress={() => router.push('/settings')}
@@ -52,7 +56,12 @@ export default function HomeScreen() {
             </AppText>
           </View>
         </View>
-        <AppButton title={t.home.dailyCta} variant="accent" icon="play" onPress={() => router.push('/daily')} />
+        <AppButton
+          title={playedToday ? t.daily.played : t.home.dailyCta}
+          variant="accent"
+          icon={playedToday ? 'check' : 'play'}
+          onPress={() => router.push('/daily')}
+        />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(160).duration(400)} style={{ gap: spacing.sm }}>
