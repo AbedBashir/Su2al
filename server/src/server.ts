@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { dayKey } from '../../src/shared/quiz';
 import { ensureSchema } from './db';
+import { homeHtml } from './home';
 import { privacyHtml } from './privacy';
 import { countrySchema, createPlayer, nameSchema, optionalPlayer, requirePlayer, updatePlayer } from './players';
 import { acceptableDay, allTimeRank, allTimeTop, dailyRank, dailyTop, saveDaily, scoreSubmission, submitSchema } from './scores';
@@ -19,6 +20,7 @@ const asyncRoute =
   (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) =>
     fn(req, res).catch(next);
 
+app.get('/', (_req, res) => res.type('html').send(homeHtml));
 app.get('/privacy', (_req, res) => res.type('html').send(privacyHtml));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', day: dayKey() }));
