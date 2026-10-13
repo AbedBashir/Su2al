@@ -1,11 +1,14 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { StyleSheet, Switch, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Linking, StyleSheet, Switch, View } from 'react-native';
 
-import { AppText, Card, Icon, PressableScale, Screen, type IconName } from '@/components';
+import { AppButton, AppText, Card, Icon, PressableScale, Screen, type IconName } from '@/components';
+import { adsAvailable, showAdPrivacyOptions } from '@/lib/ads';
 import { t } from '@/lib/strings';
 import { flag } from '@/lib/countries';
 import { usePlayerStore } from '@/stores/playerStore';
+import { REMOVE_ADS, storeConfigured, useShopStore } from '@/stores/shopStore';
 import { useSettingsStore, type ThemeMode } from '@/stores/settingsStore';
 import { minTapTarget, useTheme } from '@/theme';
 
@@ -63,10 +66,103 @@ export default function SettingsScreen() {
         <ToggleRow icon="vibrate" title={t.settings.haptics} value={hapticsEnabled} onChange={setHapticsEnabled} />
       </Card>
 
+      <RemoveAdsCard />
+
+      <Card>
+        {adsAvailable() ? (
+          <LinkRow
+            icon="shield-account"
+            title={t.shop.adPrivacy}
+            onPress={async () => {
+              if (!(await showAdPrivacyOptions())) Alert.alert(t.shop.adPrivacy, t.shop.adPrivacyNone);
+            }}
+          />
+        ) : null}
+        {/* Cross-promotion: our other app. */}
+        <LinkRow
+          icon="apps"
+          title={t.shop.moreApps}
+          subtitle={t.shop.spendshot}
+          onPress={() => Linking.openURL('https://play.google.com/store/apps/details?id=com.abedbashir.spendshot')}
+        />
+      </Card>
+
       <AppText variant="caption" color="textMuted" align="center">
         {`${t.settings.version} ${Constants.expoConfig?.version ?? ''}`}
       </AppText>
     </Screen>
+  );
+}
+
+function RemoveAdsCard() {
+  const { spacing } = useTheme();
+  const { adsRemoved, product, buyRemoveAds, restore } = useShopStore();
+  const [busy, setBusy] = useState(false);
+
+  const buy = async () => {
+    setBusy(true);
+    try {
+      await buyRemoveAds();
+    } catch {
+      Alert.alert(t.shop.failed);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const restorePurchases = async () => {
+    setBusy(true);
+    try {
+      Alert.alert((await restore()) ? t.shop.restored : t.shop.nothingToRestore);
+    } catch {
+      Alert.alert(t.shop.failed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card>
+      <SectionTitle icon="cancel" title={t.shop.removeAdsTitle} />
+      {adsRemoved ? (
+        <AppText color="success">{t.shop.owned}</AppText>
+      ) : (
+        <>
+          <AppText color="textMuted">{t.shop.removeAdsBody}</AppText>
+          <AppButton
+            title={storeConfigured && product ? `${t.shop.buy} · ${product.priceString}` : `${REMOVE_ADS.fallbackPrice} · ${t.shop.comingSoon}`}
+            icon="cart"
+            disabled={!storeConfigured || !product}
+            loading={busy}
+            onPress={buy}
+          />
+        </>
+      )}
+      {storeConfigured ? (
+        <PressableScale onPress={restorePurchases} accessibilityRole="button" style={{ paddingVertical: spacing.xs }}>
+          <AppText variant="label" color="primary" align="center">
+            {t.shop.restore}
+          </AppText>
+        </PressableScale>
+      ) : null}
+    </Card>
+  );
+}
+
+function LinkRow({ icon, title, subtitle, onPress }: { icon: IconName; title: string; subtitle?: string; onPress: () => void }) {
+  const { colors, spacing } = useTheme();
+  return (
+    <PressableScale onPress={onPress} accessibilityRole="button" accessibilityLabel={title} style={[styles.row, styles.toggleRow, { gap: spacing.sm }]}>
+      <Icon name={icon} size={22} color={colors.primary} />
+      <View style={styles.flex}>
+        <AppText>{title}</AppText>
+        {subtitle ? (
+          <AppText variant="caption" color="textMuted">
+            {subtitle}
+          </AppText>
+        ) : null}
+      </View>
+      <Icon name="chevron-left" size={24} color={colors.textMuted} />
+    </PressableScale>
   );
 }
 

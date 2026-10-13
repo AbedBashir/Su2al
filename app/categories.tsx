@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { FlatList, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { AppText, Icon, PressableScale, Screen } from '@/components';
+import { AdBanner } from '@/lib/ads';
 import { CATEGORIES, type Category } from '@/lib/categories';
 import { t } from '@/lib/strings';
 import { useTheme } from '@/theme';
@@ -46,7 +47,7 @@ export default function CategoriesScreen() {
         initialNumToRender={CATEGORIES.length}
         showsVerticalScrollIndicator={false}
       />
-      {/* Banner ad slot (phase 5) goes here. */}
+      <AdBanner />
     </Screen>
   );
 }

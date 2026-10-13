@@ -40,10 +40,15 @@ jobs:
 
       - name: Generate native Android project
         run: npx expo prebuild --platform android --no-install
+        env:
+          # Preview builds show Google's test ads, never the live ones.
+          EXPO_PUBLIC_APP_VARIANT: preview
 
       # Real phones only (ARM); skipping x86 keeps the APK small and the build fast.
       - name: Build release APK
         working-directory: android
+        env:
+          EXPO_PUBLIC_APP_VARIANT: preview
         run: ./gradlew assembleRelease -PreactNativeArchitectures=armeabi-v7a,arm64-v8a --no-daemon
 
       - name: Publish to the "preview" release

@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { AppButton, AppText, Card, Icon, Screen, type IconName } from '@/components';
 import { lastRound } from '@/game/summary';
+import { AdBanner, maybeShowInterstitial } from '@/lib/ads';
 import { usePlayerStore } from '@/stores/playerStore';
 import { getCategory } from '@/lib/categories';
 import { formatNumber, t } from '@/lib/strings';
@@ -15,6 +16,11 @@ export default function ResultScreen() {
   // Read once: the summary belongs to the round that just ended.
   const [round] = useState(lastRound);
   const profile = usePlayerStore((s) => s.profile);
+  // A full-screen ad now and then, only after the result has been seen.
+  useEffect(() => {
+    const id = setTimeout(() => void maybeShowInterstitial(), 1500);
+    return () => clearTimeout(id);
+  }, []);
   // Filled in when the server confirms the daily score.
   const rank = usePlayerStore((s) => (round?.day && s.lastRank?.day === round.day ? s.lastRank.rank : null));
 
@@ -79,6 +85,7 @@ export default function ResultScreen() {
         )}
         <AppButton title={t.result.home} variant="secondary" icon="home" onPress={() => router.dismissAll()} />
       </View>
+      <AdBanner />
     </Screen>
   );
 }

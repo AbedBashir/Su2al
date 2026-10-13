@@ -74,6 +74,25 @@ const BANK = {
   general,
 } as Record<CategoryId, RawQuestion[]>;
 
+/**
+ * The daily challenge only draws from the first N questions of each category, frozen at
+ * release. Questions added in later app updates show up in category rounds only, so
+ * every app version and the server keep agreeing on each day's 10 questions.
+ * Never lower these numbers; raising them changes daily sets for older app versions.
+ */
+const DAILY_POOL: Record<CategoryId, number> = {
+  history: 100,
+  geography: 100,
+  science: 100,
+  sports: 100,
+  language: 100,
+  religion: 100,
+  arts: 100,
+  technology: 100,
+  nature: 99,
+  general: 111,
+};
+
 export const questionCount = (category?: CategoryId) =>
   category ? BANK[category].length : CATEGORY_IDS.reduce((n, c) => n + BANK[c].length, 0);
 
@@ -132,8 +151,9 @@ export function dailyQuestions(key = dayKey()): Question[] {
   const used = new Set<string>();
   plan.forEach((difficulty, i) => {
     const category = categories[i % categories.length] as CategoryId;
-    const pool = BANK[category].filter((q) => q.d === difficulty && !used.has(q.id));
-    const fallback = BANK[category].filter((q) => !used.has(q.id));
+    const frozen = BANK[category].slice(0, DAILY_POOL[category]);
+    const pool = frozen.filter((q) => q.d === difficulty && !used.has(q.id));
+    const fallback = frozen.filter((q) => !used.has(q.id));
     const choices = pool.length ? pool : fallback;
     const raw = choices[Math.floor(random() * choices.length)];
     if (!raw) return;

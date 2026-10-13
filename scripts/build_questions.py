@@ -7,6 +7,15 @@ sys.path.insert(0, os.path.dirname(__file__))
 from q_history_geo import HISTORY, GEOGRAPHY
 from q_sci_sport_lang import SCIENCE, SPORTS, LANGUAGE
 from q_rest import RELIGION, ARTS, TECHNOLOGY, NATURE, GENERAL
+from q2_history_geo import HISTORY2, GEOGRAPHY2
+from q2_sci_sport import SCIENCE2, SPORTS2
+from q2_lang_rel_art import LANGUAGE2, RELIGION2, ARTS2
+from q2_tech_nat_gen import TECHNOLOGY2, NATURE2, GENERAL2
+
+# Batches are appended in order, so a question's id (prefix + position) never
+# changes once released: players' "seen" lists and past daily sets stay valid.
+HISTORY, GEOGRAPHY, SCIENCE, SPORTS, LANGUAGE = HISTORY + HISTORY2, GEOGRAPHY + GEOGRAPHY2, SCIENCE + SCIENCE2, SPORTS + SPORTS2, LANGUAGE + LANGUAGE2
+RELIGION, ARTS, TECHNOLOGY, NATURE, GENERAL = RELIGION + RELIGION2, ARTS + ARTS2, TECHNOLOGY + TECHNOLOGY2, NATURE + NATURE2, GENERAL + GENERAL2
 
 CATEGORIES = {
     "history": ("his", HISTORY), "geography": ("geo", GEOGRAPHY), "science": ("sci", SCIENCE),

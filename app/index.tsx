@@ -2,7 +2,8 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { AppButton, AppText, Icon, PressableScale, Screen, StatChip } from '@/components';
+import { AppButton, AppText, Icon, PressableScale, Screen, StatChip, WatchAdCard } from '@/components';
+import { AdBanner } from '@/lib/ads';
 import { dayKey } from '@/shared/quiz';
 import { t } from '@/lib/strings';
 import { liveStreak, useProgressStore } from '@/stores/progressStore';
@@ -74,7 +75,11 @@ export default function HomeScreen() {
         <HomeTile icon="trophy" title={t.home.leaderboard} onPress={() => router.push('/leaderboard')} />
       </Animated.View>
 
-      {/* Reserved space: the banner ad slot (phase 5) goes at the bottom of Home. */}
+      <Animated.View entering={FadeInDown.delay(240).duration(400)}>
+        <WatchAdCard />
+      </Animated.View>
+      <View style={styles.flex} />
+      <AdBanner />
     </Screen>
   );
 }

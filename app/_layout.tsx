@@ -8,7 +8,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { iconFonts } from '@/components';
 import { ensureRTL } from '@/lib/rtl';
+import { prepareAds } from '@/lib/ads';
 import { usePlayerStore } from '@/stores/playerStore';
+import { useShopStore } from '@/stores/shopStore';
 import { t } from '@/lib/strings';
 import { AppThemeProvider, fontFamily, useTheme } from '@/theme';
 
@@ -26,6 +28,8 @@ export default function RootLayout() {
   // A daily score finished offline goes up as soon as the app opens again.
   useEffect(() => {
     void usePlayerStore.getState().flush();
+    // Purchases first, so someone who removed ads never gets a consent prompt or an ad.
+    void useShopStore.getState().init().then(prepareAds);
   }, []);
 
   if (!fontsLoaded && !fontError) return null;

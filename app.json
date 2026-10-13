@@ -70,7 +70,24 @@
           "supportsRTL": true,
           "forcesRTL": true
         }
-      ]
+      ],
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-8824433754085561~5256966537",
+          "iosAppId": "ca-app-pub-8824433754085561~9673978834",
+          "delayAppMeasurementInit": true,
+          "skAdNetworkItems": ["cstr6suwn9.skadnetwork"],
+          "userTrackingUsageDescription": "سؤال يستخدم هذا لعرض إعلانات أقرب لاهتماماتك."
+        }
+      ],
+      [
+        "expo-tracking-transparency",
+        {
+          "userTrackingPermission": "سؤال يستخدم هذا لعرض إعلانات أقرب لاهتماماتك."
+        }
+      ],
+      "expo-build-properties"
     ],
     "experiments": {
       "typedRoutes": true
@@ -78,5 +95,12 @@
     "extra": {
       "apiUrl": "https://su2al.abedbashir.com"
     }
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-8824433754085561~5256966537",
+    "ios_app_id": "ca-app-pub-8824433754085561~9673978834",
+    "delay_app_measurement_init": true,
+    "sk_ad_network_items": ["cstr6suwn9.skadnetwork"],
+    "user_tracking_usage_description": "سؤال يستخدم هذا لعرض إعلانات أقرب لاهتماماتك."
   }
 }

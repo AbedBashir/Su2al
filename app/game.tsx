@@ -4,6 +4,7 @@ import { Alert, BackHandler, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { AppText, Card, Icon, PressableScale, Screen, StatChip } from '@/components';
+import { watchAdForCoins } from '@/game/rewards';
 import { setLastRound, type RoundSummary } from '@/game/summary';
 import { HELPERS, RULES, useGame, type Answer, type Helper, type Mode } from '@/game/useGame';
 import { getCategory, type CategoryId } from '@/lib/categories';
@@ -258,7 +259,11 @@ function Helpers({ disabled, fiftyUsed, apply }: { disabled: boolean; fiftyUsed:
 
   const use = (helper: Helper) => {
     if (!spend(HELPERS[helper].cost)) {
-      Alert.alert(t.game.notEnoughCoins, t.game.notEnoughCoinsBody);
+      Alert.alert(t.game.notEnoughCoins, t.game.notEnoughCoinsBody, [
+        { text: t.common.cancel, style: 'cancel' },
+        // The clock keeps running while the ad plays, so this is a real trade-off.
+        { text: t.coins.watchForCoins, onPress: () => void watchAdForCoins().then((r) => r !== 'earned' && Alert.alert(r === 'limit' ? t.coins.limit : t.coins.unavailable)) },
+      ]);
       return;
     }
     apply(helper);
