@@ -21,7 +21,8 @@ export function WatchAdCard() {
     setBusy(true);
     const result = await watchAdForCoins();
     setBusy(false);
-    Alert.alert(result === 'earned' ? t.coins.earned : result === 'limit' ? t.coins.limit : t.coins.unavailable);
+    // Closing the ad early just gives nothing; no message needed.
+    if (result !== 'skipped') Alert.alert(result === 'earned' ? t.coins.earned : result === 'limit' ? t.coins.limit : t.coins.unavailable);
   };
 
   return (

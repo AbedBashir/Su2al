@@ -214,10 +214,10 @@ export function useGame(mode: Mode, questions: Question[]) {
   );
 
   /**
-   * Runs an ad over the game: the clock stops while it plays. Resolves with whether
-   * the ad was watched to the end.
+   * Runs an ad over the game: the clock stops while it plays. Resolves with what
+   * `show` returns.
    */
-  const withAdPause = useCallback(async (show: () => Promise<boolean>) => {
+  const withAdPause = useCallback(async <T,>(show: () => Promise<T>) => {
     dispatch({ type: 'pause', now: Date.now() });
     try {
       return await show();

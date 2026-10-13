@@ -113,8 +113,9 @@ export default function GameScreen() {
           apply={game.applyHelper}
           withAdPause={game.withAdPause}
           onHint={async () => {
-            if (await game.withAdPause(showRewardedAd)) game.hint();
-            else Alert.alert(t.game.adUnavailable);
+            const result = await game.withAdPause(showRewardedAd);
+            if (result === 'earned') game.hint();
+            else if (result === 'unavailable') Alert.alert(t.game.adUnavailable);
           }}
         />
       ) : null}
@@ -122,11 +123,10 @@ export default function GameScreen() {
       {state.phase === 'offer' ? (
         <SecondChance
           onWatch={async () => {
-            if (await showRewardedAd()) game.revive();
-            else {
-              Alert.alert(t.game.adUnavailable);
-              game.decline();
-            }
+            const result = await showRewardedAd();
+            if (result === 'earned') return game.revive();
+            if (result === 'unavailable') Alert.alert(t.game.adUnavailable);
+            game.decline();
           }}
           onEnd={game.decline}
         />
@@ -288,7 +288,7 @@ function Helpers({
   wrongLeft: number;
   hinted: boolean;
   apply: (h: Helper) => void;
-  withAdPause: (show: () => Promise<boolean>) => Promise<boolean>;
+  withAdPause: <T>(show: () => Promise<T>) => Promise<T>;
   onHint: () => void;
 }) {
   const { colors, radius } = useTheme();
@@ -303,9 +303,7 @@ function Helpers({
           text: t.coins.watchForCoins,
           onPress: () =>
             // The clock stops while the ad plays.
-            void withAdPause(async () => (await watchAdForCoins()) === 'earned').then(
-              (ok) => !ok && Alert.alert(t.coins.unavailable),
-            ),
+            void withAdPause(watchAdForCoins).then((r) => (r === 'unavailable' || r === 'limit') && Alert.alert(r === 'limit' ? t.coins.limit : t.coins.unavailable)),
         },
       ]);
       return;

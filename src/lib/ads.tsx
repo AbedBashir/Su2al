@@ -213,28 +213,31 @@ async function readyRewarded(m: AdsModule): Promise<Rewarded | null> {
  * the reward; false if they closed early or no ad was available.
  * (Players who removed ads can still choose to watch one for a reward.)
  */
-export async function showRewardedAd(): Promise<boolean> {
-  if (!mod || !UNITS.rewarded || !(await initAds())) return false;
+/** `skipped`: the ad played but was closed before the reward; `unavailable`: no ad could be shown. */
+export type RewardedResult = 'earned' | 'skipped' | 'unavailable';
+
+export async function showRewardedAd(): Promise<RewardedResult> {
+  if (!mod || !UNITS.rewarded || !(await initAds())) return 'unavailable';
   const m = mod;
   const ad = await readyRewarded(m);
   if (!ad) {
     preloadRewarded();
-    return false;
+    return 'unavailable';
   }
-  return new Promise<boolean>((resolve) => {
+  return new Promise<RewardedResult>((resolve) => {
     let earned = false;
     const unsubs = [
       ad.addAdEventListener(m.RewardedAdEventType.EARNED_REWARD, () => {
         earned = true;
       }),
-      ad.addAdEventListener(m.AdEventType.CLOSED, () => finish(earned)),
-      ad.addAdEventListener(m.AdEventType.ERROR, () => finish(false)),
+      ad.addAdEventListener(m.AdEventType.CLOSED, () => finish(earned ? 'earned' : 'skipped')),
+      ad.addAdEventListener(m.AdEventType.ERROR, () => finish('unavailable')),
     ];
-    function finish(v: boolean) {
+    function finish(v: RewardedResult) {
       unsubs.forEach((u) => u());
       preloadRewarded(); // get the next one ready
       resolve(v);
     }
-    ad.show().catch(() => finish(false));
+    ad.show().catch(() => finish('unavailable'));
   });
 }
