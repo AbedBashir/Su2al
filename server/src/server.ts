@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { dayKey } from '../../src/shared/quiz';
 import { ensureSchema } from './db';
+import { privacyHtml } from './privacy';
 import { countrySchema, createPlayer, nameSchema, optionalPlayer, requirePlayer, updatePlayer } from './players';
 import { acceptableDay, allTimeRank, allTimeTop, dailyRank, dailyTop, saveDaily, scoreSubmission, submitSchema } from './scores';
 
@@ -17,6 +18,8 @@ const zodMessage = (e: z.ZodError) => e.issues[0]?.message ?? 'Invalid request';
 const asyncRoute =
   (fn: (req: Request, res: Response) => Promise<unknown>) => (req: Request, res: Response, next: NextFunction) =>
     fn(req, res).catch(next);
+
+app.get('/privacy', (_req, res) => res.type('html').send(privacyHtml));
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', day: dayKey() }));
 
