@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, BackHandler, StyleSheet, View } from 'react-native';
+import { Alert, BackHandler, Modal, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
-import { AppText, Card, Icon, PressableScale, Screen, StatChip } from '@/components';
+import { AppButton, AppText, Card, Icon, PressableScale, Screen, StatChip } from '@/components';
 import { watchAdForCoins } from '@/game/rewards';
 import { setLastRound, type RoundSummary } from '@/game/summary';
-import { HELPERS, RULES, useGame, type Answer, type Helper, type Mode } from '@/game/useGame';
+import { HELPERS, RULES, useGame, wrongLeft, type Answer, type Helper, type Mode } from '@/game/useGame';
+import { rewardedAvailable, showRewardedAd } from '@/lib/ads';
 import { getCategory, type CategoryId } from '@/lib/categories';
 import { categoryQuestions, dailyQuestions, dayKey, type Question } from '@/shared/quiz';
 import { formatNumber, t } from '@/lib/strings';
@@ -105,7 +106,30 @@ export default function GameScreen() {
       </Animated.View>
 
       {mode === 'category' ? (
-        <Helpers disabled={state.phase !== 'question'} fiftyUsed={state.hidden.length > 0} apply={game.applyHelper} />
+        <Helpers
+          disabled={state.phase !== 'question'}
+          wrongLeft={wrongLeft(question, state.hidden).length}
+          hinted={state.hinted}
+          apply={game.applyHelper}
+          withAdPause={game.withAdPause}
+          onHint={async () => {
+            if (await game.withAdPause(showRewardedAd)) game.hint();
+            else Alert.alert(t.game.adUnavailable);
+          }}
+        />
+      ) : null}
+
+      {state.phase === 'offer' ? (
+        <SecondChance
+          onWatch={async () => {
+            if (await showRewardedAd()) game.revive();
+            else {
+              Alert.alert(t.game.adUnavailable);
+              game.decline();
+            }
+          }}
+          onEnd={game.decline}
+        />
       ) : null}
     </Screen>
   );
@@ -252,7 +276,21 @@ function Feedback({ phase, answer, questionId }: { phase: string; answer?: Answe
   );
 }
 
-function Helpers({ disabled, fiftyUsed, apply }: { disabled: boolean; fiftyUsed: boolean; apply: (h: Helper) => void }) {
+function Helpers({
+  disabled,
+  wrongLeft,
+  hinted,
+  apply,
+  withAdPause,
+  onHint,
+}: {
+  disabled: boolean;
+  wrongLeft: number;
+  hinted: boolean;
+  apply: (h: Helper) => void;
+  withAdPause: (show: () => Promise<boolean>) => Promise<boolean>;
+  onHint: () => void;
+}) {
   const { colors, radius } = useTheme();
   const coins = useProgressStore((s) => s.coins);
   const spend = useProgressStore((s) => s.spendCoins);
@@ -261,18 +299,30 @@ function Helpers({ disabled, fiftyUsed, apply }: { disabled: boolean; fiftyUsed:
     if (!spend(HELPERS[helper].cost)) {
       Alert.alert(t.game.notEnoughCoins, t.game.notEnoughCoinsBody, [
         { text: t.common.cancel, style: 'cancel' },
-        // The clock keeps running while the ad plays, so this is a real trade-off.
-        { text: t.coins.watchForCoins, onPress: () => void watchAdForCoins().then((r) => r !== 'earned' && Alert.alert(r === 'limit' ? t.coins.limit : t.coins.unavailable)) },
+        {
+          text: t.coins.watchForCoins,
+          onPress: () =>
+            // The clock stops while the ad plays.
+            void withAdPause(async () => (await watchAdForCoins()) === 'earned').then(
+              (ok) => !ok && Alert.alert(t.coins.unavailable),
+            ),
+        },
       ]);
       return;
     }
     apply(helper);
   };
 
+  const buttonStyle = (off: boolean) => [
+    styles.helper,
+    { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: radius.md, opacity: off ? 0.45 : 1 },
+  ];
+
   return (
     <Animated.View entering={FadeIn} style={[styles.row, { gap: 8 }]}>
       {(Object.keys(HELPERS) as Helper[]).map((helper) => {
-        const blocked = disabled || (helper === 'fifty' && fiftyUsed);
+        // 50:50 needs at least two wrong answers left to remove one.
+        const blocked = disabled || (helper === 'fifty' && wrongLeft < 2);
         return (
           <PressableScale
             key={helper}
@@ -280,15 +330,7 @@ function Helpers({ disabled, fiftyUsed, apply }: { disabled: boolean; fiftyUsed:
             disabled={blocked}
             accessibilityRole="button"
             accessibilityLabel={t.game.helpers[helper]}
-            style={[
-              styles.helper,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                borderRadius: radius.md,
-                opacity: blocked || coins < HELPERS[helper].cost ? 0.45 : 1,
-              },
-            ]}
+            style={buttonStyle(blocked || coins < HELPERS[helper].cost)}
           >
             <Icon name={HELPERS[helper].icon} size={22} color={colors.primary} />
             <AppText variant="caption">{t.game.helpers[helper]}</AppText>
@@ -301,7 +343,79 @@ function Helpers({ disabled, fiftyUsed, apply }: { disabled: boolean; fiftyUsed:
           </PressableScale>
         );
       })}
+      {rewardedAvailable() ? (
+        // Free hint for watching an ad: removes one wrong answer, once per question.
+        <PressableScale
+          onPress={onHint}
+          disabled={disabled || hinted || wrongLeft < 2}
+          accessibilityRole="button"
+          accessibilityLabel={`${t.game.hint} (${t.game.byAd})`}
+          style={buttonStyle(disabled || hinted || wrongLeft < 2)}
+        >
+          <Icon name="lightbulb-on-outline" size={22} color={colors.accent} />
+          <AppText variant="caption">{t.game.hint}</AppText>
+          <View style={[styles.row, { gap: 2 }]}>
+            <Icon name="play-circle" size={13} color={colors.accent} />
+            <AppText variant="caption" color="textMuted">
+              {t.game.byAd}
+            </AppText>
+          </View>
+        </PressableScale>
+      ) : null}
     </Animated.View>
+  );
+}
+
+const OFFER_SECONDS = 10;
+
+/** Out of hearts: one ad brings two back. Declines by itself after a short countdown. */
+function SecondChance({ onWatch, onEnd }: { onWatch: () => Promise<void>; onEnd: () => void }) {
+  const { colors, radius, spacing } = useTheme();
+  const [left, setLeft] = useState(OFFER_SECONDS);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (busy) return;
+    if (left <= 0) {
+      onEnd();
+      return;
+    }
+    const id = setTimeout(() => setLeft((n) => n - 1), 1000);
+    return () => clearTimeout(id);
+  }, [left, busy, onEnd]);
+
+  const watch = async () => {
+    setBusy(true);
+    await onWatch();
+  };
+
+  return (
+    <Modal transparent animationType="fade" visible statusBarTranslucent onRequestClose={onEnd}>
+      <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+        <Animated.View entering={ZoomIn.springify()} style={[styles.offer, { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl, gap: spacing.md }]}>
+          <View style={[styles.row, { gap: 4, justifyContent: 'center' }]}>
+            <Icon name="heart-broken" size={40} color={colors.danger} />
+          </View>
+          <AppText variant="title" align="center">
+            {t.game.secondChance.title}
+          </AppText>
+          <AppText color="textMuted" align="center">
+            {t.game.secondChance.body}
+          </AppText>
+          <View style={[styles.row, { gap: 4, justifyContent: 'center' }]}>
+            {Array.from({ length: RULES.reviveLives }, (_, i) => (
+              <Icon key={i} name="heart" size={30} color={colors.danger} />
+            ))}
+          </View>
+          <AppButton title={t.game.secondChance.watch} variant="accent" icon="play-circle" loading={busy} onPress={watch} />
+          <PressableScale onPress={onEnd} disabled={busy} accessibilityRole="button" style={{ paddingVertical: spacing.xs }}>
+            <AppText variant="label" color="textMuted" align="center">
+              {t.game.secondChance.end} {busy ? '' : `(${formatNumber(left)})`}
+            </AppText>
+          </PressableScale>
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 
@@ -318,4 +432,6 @@ const styles = StyleSheet.create({
   badge: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   feedback: { minHeight: 44, justifyContent: 'center', marginTop: 10 },
   helper: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderWidth: 1 },
+  overlay: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  offer: { width: '100%', maxWidth: 380 },
 });

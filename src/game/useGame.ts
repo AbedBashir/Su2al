@@ -9,6 +9,8 @@ export type Mode = 'daily' | 'category';
 export const RULES = {
   secondsPerQuestion: QUIZ.secondsPerQuestion,
   lives: 3,
+  /** Hearts given back by the once-per-round "second chance" ad. */
+  reviveLives: 2,
   revealMs: 1300,
   coinsPerCorrect: 2,
 } as const;
@@ -26,11 +28,18 @@ export type Answer = { id: string; choice: string | null; correct: boolean; poin
 
 type State = {
   index: number;
-  phase: 'question' | 'reveal' | 'done';
+  /** `offer`: out of hearts in a category round, deciding on the second-chance ad. */
+  phase: 'question' | 'reveal' | 'offer' | 'done';
   /** Option the player picked; null on timeout or skip. */
   picked: number | null;
-  /** Options removed by 50/50 for the current question. */
+  /** Options removed by 50/50 or the hint for the current question. */
   hidden: number[];
+  /** Hint (by ad) already used on this question. */
+  hinted: boolean;
+  /** Second chance already used this round. */
+  revived: boolean;
+  /** Set while an ad covers the screen: the countdown stops and resumes after it. */
+  pausedAt: number | null;
   deadline: number;
   startedAt: number;
   score: number;
@@ -44,13 +53,21 @@ type Action =
   | { type: 'skip'; now: number; question: Question }
   | { type: 'next'; total: number; now: number }
   | { type: 'fifty'; hidden: number[] }
-  | { type: 'time' };
+  | { type: 'hint'; hide: number }
+  | { type: 'time' }
+  | { type: 'pause'; now: number }
+  | { type: 'resume'; now: number }
+  | { type: 'revive'; total: number; now: number }
+  | { type: 'decline' };
 
 const initial = (now: number): State => ({
   index: 0,
   phase: 'question',
   picked: null,
   hidden: [],
+  hinted: false,
+  revived: false,
+  pausedAt: null,
   deadline: now + RULES.secondsPerQuestion * 1000,
   startedAt: now,
   score: 0,
@@ -59,6 +76,21 @@ const initial = (now: number): State => ({
   usedHelpers: [],
 });
 
+
+const advance = (s: State, now: number): State => ({
+  ...s,
+  index: s.index + 1,
+  phase: 'question',
+  picked: null,
+  hidden: [],
+  hinted: false,
+  deadline: now + RULES.secondsPerQuestion * 1000,
+  startedAt: now,
+});
+
+/** Wrong options still on screen. */
+export const wrongLeft = (q: Question, hidden: number[]) =>
+  q.options.map((_, i) => i).filter((i) => i !== q.answer && !hidden.includes(i));
 
 function reducer(mode: Mode) {
   return (s: State, a: Action): State => {
@@ -91,21 +123,30 @@ function reducer(mode: Mode) {
         };
       case 'next': {
         if (s.phase !== 'reveal') return s;
-        const over = s.index + 1 >= a.total || s.lives <= 0;
-        if (over) return { ...s, phase: 'done' };
-        return {
-          ...s,
-          index: s.index + 1,
-          phase: 'question',
-          picked: null,
-          hidden: [],
-          deadline: a.now + RULES.secondsPerQuestion * 1000,
-          startedAt: a.now,
-        };
+        if (s.index + 1 >= a.total) return { ...s, phase: 'done' };
+        // Out of hearts with questions left: offer the second chance once per round.
+        if (s.lives <= 0) return mode === 'category' && !s.revived ? { ...s, phase: 'offer' } : { ...s, phase: 'done' };
+        return advance(s, a.now);
       }
+      case 'revive':
+        if (s.phase !== 'offer') return s;
+        return advance({ ...s, lives: RULES.reviveLives, revived: true }, a.now);
+      case 'decline':
+        return s.phase === 'offer' ? { ...s, phase: 'done' } : s;
       case 'fifty': {
-        if (s.phase !== 'question' || s.hidden.length) return s;
-        return { ...s, hidden: a.hidden, usedHelpers: [...s.usedHelpers, 'fifty'] };
+        if (s.phase !== 'question') return s;
+        return { ...s, hidden: [...s.hidden, ...a.hidden], usedHelpers: [...s.usedHelpers, 'fifty'] };
+      }
+      case 'hint':
+        if (s.phase !== 'question' || s.hinted) return s;
+        return { ...s, hidden: [...s.hidden, a.hide], hinted: true };
+      case 'pause':
+        return s.phase === 'question' && s.pausedAt === null ? { ...s, pausedAt: a.now } : s;
+      case 'resume': {
+        if (s.pausedAt === null) return s;
+        // The ad's time doesn't count against the player, for the clock or the speed bonus.
+        const away = a.now - s.pausedAt;
+        return { ...s, pausedAt: null, deadline: s.deadline + away, startedAt: s.startedAt + away };
       }
       case 'time':
         if (s.phase !== 'question') return s;
@@ -127,14 +168,14 @@ export function useGame(mode: Mode, questions: Question[]) {
   // Countdown: tick while a question is open; time running out counts as a wrong answer.
   useEffect(() => {
     const current = questions[state.index];
-    if (state.phase !== 'question' || !current) return;
+    if (state.phase !== 'question' || !current || state.pausedAt !== null) return;
     const timer = setInterval(() => {
       const t = Date.now();
       setNow(t);
       if (t >= state.deadline) dispatch({ type: 'pick', option: null, now: t, question: current });
     }, 100);
     return () => clearInterval(timer);
-  }, [state.phase, state.deadline, state.index, questions]);
+  }, [state.phase, state.deadline, state.index, state.pausedAt, questions]);
 
   // After the answer is shown, move on.
   useEffect(() => {
@@ -162,15 +203,40 @@ export function useGame(mode: Mode, questions: Question[]) {
     (helper: Helper) => {
       if (!question) return;
       if (helper === 'fifty') {
-        const wrong = question.options.map((_, i) => i).filter((i) => i !== question.answer);
-        dispatch({ type: 'fifty', hidden: wrong.sort(() => Math.random() - 0.5).slice(0, 2) });
+        // Leaves the right answer and one wrong one, even after a hint.
+        const wrong = wrongLeft(question, state.hidden).sort(() => Math.random() - 0.5);
+        dispatch({ type: 'fifty', hidden: wrong.slice(0, wrong.length - 1) });
       }
       if (helper === 'time') dispatch({ type: 'time' });
       if (helper === 'skip') dispatch({ type: 'skip', now: Date.now(), question });
     },
-    [question],
+    [question, state.hidden],
   );
 
-  const msLeft = state.phase === 'question' ? Math.max(0, state.deadline - now) : 0;
-  return { state, question, msLeft, pick, applyHelper };
+  /**
+   * Runs an ad over the game: the clock stops while it plays. Resolves with whether
+   * the ad was watched to the end.
+   */
+  const withAdPause = useCallback(async (show: () => Promise<boolean>) => {
+    dispatch({ type: 'pause', now: Date.now() });
+    try {
+      return await show();
+    } finally {
+      dispatch({ type: 'resume', now: Date.now() });
+    }
+  }, []);
+
+  /** Removes one wrong option (after a watched ad). */
+  const hint = useCallback(() => {
+    if (!question) return;
+    const wrong = wrongLeft(question, state.hidden);
+    const hide = wrong[Math.floor(Math.random() * wrong.length)];
+    if (hide !== undefined) dispatch({ type: 'hint', hide });
+  }, [question, state.hidden]);
+
+  const revive = useCallback(() => dispatch({ type: 'revive', total: questions.length, now: Date.now() }), [questions.length]);
+  const decline = useCallback(() => dispatch({ type: 'decline' }), []);
+
+  const msLeft = state.phase !== 'question' ? 0 : Math.max(0, state.deadline - (state.pausedAt ?? now));
+  return { state, question, msLeft, pick, applyHelper, withAdPause, hint, revive, decline };
 }

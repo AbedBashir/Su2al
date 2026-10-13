@@ -59,7 +59,9 @@ export function initAds(): Promise<boolean> {
     const m = mod;
     ready = (async () => {
       try {
-        const info = await m.AdsConsent.gatherConsent();
+        // If the consent check itself fails (offline, or no consent form set up for this
+        // app), fall back to the status already known; outside Europe that allows ads.
+        const info = await m.AdsConsent.gatherConsent().catch(() => m.AdsConsent.getConsentInfo());
         if (!info.canRequestAds) return false;
         const choices = await m.AdsConsent.getUserChoices().catch(() => null);
         const tracking = Platform.OS === 'ios' ? (await requestTrackingPermissionsAsync().catch(() => null))?.granted : true;
@@ -146,10 +148,13 @@ export async function maybeShowInterstitial() {
   }
 }
 
-/** Warm up the first interstitial early so it's ready when a round ends. */
+/** Warm up ads early so they're ready when needed. Rewarded ads stay available to everyone. */
 export function prepareAds() {
-  if (adsRemoved()) return;
-  void initAds().then((ok) => ok && preloadInterstitial());
+  void initAds().then((ok) => {
+    if (!ok) return;
+    preloadRewarded();
+    if (!adsRemoved()) preloadInterstitial();
+  });
 }
 
 /** Lets EEA/UK users revisit their ad-privacy choices (must be reachable from settings). */
@@ -164,40 +169,72 @@ export async function showAdPrivacyOptions() {
 export const adsAvailable = () => !!mod;
 export const rewardedAvailable = () => !!mod && !!UNITS.rewarded;
 
-const REWARDED_LOAD_TIMEOUT_MS = 15_000;
+const REWARDED_LOAD_TIMEOUT_MS = 20_000;
+
+type Rewarded = ReturnType<AdsModule['RewardedAd']['createForAdRequest']>;
+// One rewarded ad is kept loaded in the background, so hints and the second chance
+// start instantly instead of making the player wait for a download.
+let nextRewarded: Rewarded | null = null;
+
+function preloadRewarded() {
+  if (!mod || !UNITS.rewarded || nextRewarded) return;
+  const ad = mod.RewardedAd.createForAdRequest(UNITS.rewarded, requestOptions());
+  const off = ad.addAdEventListener(mod.AdEventType.ERROR, () => {
+    off();
+    if (nextRewarded === ad) nextRewarded = null;
+  });
+  ad.load();
+  nextRewarded = ad;
+}
+
+/** Shows an ad that's already loaded, or loads one (up to 20s). Resolves to the ad, or null. */
+async function readyRewarded(m: AdsModule): Promise<Rewarded | null> {
+  const ad = nextRewarded;
+  nextRewarded = null;
+  if (ad?.loaded) return ad;
+  const fresh = ad ?? m.RewardedAd.createForAdRequest(UNITS.rewarded!, requestOptions());
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => done(null), REWARDED_LOAD_TIMEOUT_MS);
+    const unsubs = [
+      fresh.addAdEventListener(m.RewardedAdEventType.LOADED, () => done(fresh)),
+      fresh.addAdEventListener(m.AdEventType.ERROR, () => done(null)),
+    ];
+    function done(v: Rewarded | null) {
+      clearTimeout(timeout);
+      unsubs.forEach((u) => u());
+      resolve(v);
+    }
+    if (!ad) fresh.load();
+  });
+}
 
 /**
- * Loads and shows a rewarded ad. Resolves true only if the player watched long enough
- * to earn the reward; false if they closed early or no ad was available.
- * (Players who removed ads can still choose to watch one for coins.)
+ * Shows a rewarded ad. Resolves true only if the player watched long enough to earn
+ * the reward; false if they closed early or no ad was available.
+ * (Players who removed ads can still choose to watch one for a reward.)
  */
 export async function showRewardedAd(): Promise<boolean> {
   if (!mod || !UNITS.rewarded || !(await initAds())) return false;
   const m = mod;
-  const ad = m.RewardedAd.createForAdRequest(UNITS.rewarded, requestOptions());
+  const ad = await readyRewarded(m);
+  if (!ad) {
+    preloadRewarded();
+    return false;
+  }
   return new Promise<boolean>((resolve) => {
     let earned = false;
-    let settled = false;
-    const unsubs: (() => void)[] = [];
-    const finish = (v: boolean) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      unsubs.forEach((u) => u());
-      resolve(v);
-    };
-    const timeout = setTimeout(() => finish(false), REWARDED_LOAD_TIMEOUT_MS);
-    unsubs.push(
-      ad.addAdEventListener(m.RewardedAdEventType.LOADED, () => {
-        clearTimeout(timeout);
-        ad.show().catch(() => finish(false));
-      }),
+    const unsubs = [
       ad.addAdEventListener(m.RewardedAdEventType.EARNED_REWARD, () => {
         earned = true;
       }),
       ad.addAdEventListener(m.AdEventType.CLOSED, () => finish(earned)),
       ad.addAdEventListener(m.AdEventType.ERROR, () => finish(false)),
-    );
-    ad.load();
+    ];
+    function finish(v: boolean) {
+      unsubs.forEach((u) => u());
+      preloadRewarded(); // get the next one ready
+      resolve(v);
+    }
+    ad.show().catch(() => finish(false));
   });
 }
